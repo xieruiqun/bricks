@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        *{
+            border: 0;
+            padding: 0;
+            margin: 0;
+        }
+        body{
+            position: relative;
+        }
+        canvas{
+            border: 1px solid black;
+            background: url("images/start.jpg") no-repeat;
+            background-size: cover;
+            opacity: 0.8;
+        }
+        #gameName{
+            position: absolute;
+            left: 200px;
+            top: 45px;
+            width: 420px;
+        }
+        #start{
+            position: absolute;
+            left: 310px;
+            top: 410px;
+            width: 180px;
+            height: 60px;
+            cursor: pointer;
+        }
+        #home{
+            position: absolute;
+            top: 436px;
+            cursor: pointer;
+            display: none;
+        }
+        #again{
+            position: absolute;
+            top: 436px;
+            cursor: pointer;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="cvs" width="800" height="600"></canvas>
+    <img src="images/123.png" alt="" id="gameName">
+    <img src="images/2.png" alt="" onclick="startGame()" id="start">
+    <img src="images/return.png" alt="" id="home" onclick="returnHome()">
+    <img src="images/again.png" alt="" id="again" onclick="againGame()">
+    <script>
+        var cvs = document.getElementById('cvs');
+        var ctx = cvs.getContext('2d');
+        var gGame = null;
+        var home = document.getElementById('home');
+        var again = document.getElementById('again');
+        var startImage = document.getElementById('start');
+        var gameName = document.getElementById('gameName');
+        /*返回主页面*/
+        function returnHome() {
+            ctx.clearRect(0, 0, cvs.width, cvs.height);
+            cvs.style.backgroundImage = 'url("images/start.jpg")';
+            home.style.display = 'none';
+            again.style.display = 'none';
+            startImage.style.display = 'block';
+            gameName.style.display = 'block';
+        }
+        /*再玩一次*/
+        function againGame() {
+            ctx.clearRect(0, 0, cvs.width, cvs.height);
+            cvs.style.backgroundImage = 'url("images/start.jpg")';
+            home.style.display = 'none';
+            again.style.display = 'none';
+            startGame();
+        }
+        /*游戏结束*/
+        function gameOver() {
+            ctx.clearRect(0, 0, cvs.width, cvs.height);
+            cvs.style.backgroundImage = 'url("images/defeat.jpg")';
+            home.style.display = 'block';
+            again.style.display = 'block';
+            home.style.left = 300 + 'px';
+            again.style.left = 409 + 'px';
+        }
+        /*游戏胜利*/
+        function gameVictory() {
+            ctx.clearRect(0, 0, cvs.width, cvs.height);
+            cvs.style.backgroundImage = 'url("images/victory.jpg")';
+            home.style.display = 'block';
+            again.style.display = 'block';
+            home.style.left = 249 + 'px';
+            again.style.left = 463 + 'px';
+        }
+
+
+        /*开始游戏*/
+        function startGame() {
+            startImage.style.display = 'none';
+            gameName.style.display = 'none';
+            onLoad();
+        }
+        function onLoad() {
+            gGame = new Game();
+            gGame.render();
+            gGame.update();
+        }
+        /*主逻辑*/
+        function Game() {
+            var _this = this;
+            this.ball = null;
+            this.board = null;
+            this.time = null;
+            this.spaceX = 20;
+            this.spaceY = 20;
+            this.bricks = [];
+            this.brickX = 0;
+            this.brickY = 0;
+            this.imgs = [];
+            this.imgX = 0;
+            this.imgY = 0;
+            /*创建小球，挡板，砖块的对象*/
+            this.render = function () {
+                _this.ball = new Ball();
+                _this.board = new Board();
+                _this.time = new Time();
+                for (let i = 0; i < 2; i++) {
+                    _this.imgX = 690 + i * 50;
+                    _this.imgs[i] = new Life(_this.imgX, _this.imgY);
+                }
+                for (let i = 0; i < 16; i++) {
+                    _this.brickX = 60 + (i % 4) * (140 + _this.spaceX);
+                    _this.brickY = 60 + parseInt(i / 4) * (20 + _this.spaceY);
+                    _this.bricks[i] = new Brick(_this.brickX, _this.brickY);
+                }
+            };
+            this.update = function () {
+                ctx.clearRect(0, 0, cvs.width, cvs.height);
+                /*画时间进度条*/
+                _this.time.draw();
+                _this.time.updateLength();
+                _this.time.updateState();
+                /*画挡板*/
+                _this.board.draw();
+                _this.board.updatePos();
+                /*画小球*/
+                _this.ball.draw();
+                _this.ball.updatePos();
+                _this.ball.updateState();
+                /*(画砖块)和(小球与砖块碰撞)*/
+                _this.bricks.forEach(function (val, index) {
+                    if (_this.ball.positionX + _this.ball.r > val.positionX && _this.ball.positionX < val.positionX + val.width + _this.ball.r * 2 && _this.ball.positionY + _this.ball.r == val.positionY
+                        || _this.ball.positionX + _this.ball.r > val.positionX && _this.ball.positionX < val.positionX + val.width + _this.ball.r * 2 && _this.ball.positionY - _this.ball.r == val.positionY + val.height) {
+                        _this.ball.Vy = -_this.ball.Vy;
+                        val.dead = true;
+                        _this.bricks.splice(index ,1);
+                    }
+                    if (_this.ball.positionY + _this.ball.r > val.positionY && _this.ball.positionY < val.positionY + val.height + _this.ball.r && _this.ball.positionX + _this.ball.r == val.positionX
+                        || _this.ball.positionY + _this.ball.r > val.positionY && _this.ball.positionY < val.positionY + val.height + _this.ball.r && _this.ball.positionX - _this.ball.r == val.positionX + val.width) {
+                        _this.ball.Vx = -_this.ball.Vx;
+                        val.dead = true;
+                        _this.bricks.splice(index ,1);
+                    }
+                    if (!val.dead) {
+                        val.draw();
+                    }
+                });
+                /*小球与挡板碰撞*/
+                if (_this.ball.positionX > _this.board.positionX && _this.ball.positionX < _this.board.positionX + 150 && _this.ball.positionY + 10 == _this.board.positionY) {
+                    _this.ball.Vy = -_this.ball.Vy;
+                }
+                /*游戏时间到*/
+                if (_this.time.dead) {
+                    return gameOver();
+                }
+                /*生命值*/
+                if (_this.imgs.length > 0) {
+                    if (_this.ball.dead) {
+                        _this.ball.positionX = cvs.width / 2;
+                        _this.ball.positionY = cvs.height - 50;
+                        _this.board.positionX = cvs.width / 2 - _this.board.width / 2;
+                        _this.board.positionY = cvs.height - 40;
+                        _this.imgs.splice(_this.imgs.length - 1, 1);
+                        _this.ball.dead = !_this.ball.dead;
+                        _this.ball.Vx = -2;
+                        _this.ball.Vy = -2;
+                        document.onkeydown = function (e) {
+                            switch (e.keyCode) {
+                                case 32: // 空格键
+                                    window.requestAnimationFrame(_this.update);
+                                    break;
+                            }
+                        }
+                    } else {
+                        window.requestAnimationFrame(_this.update);
+                    }
+                } else {
+                    gameOver();
+                }
+                /*画生命值*/
+                for (let i = 0; i < _this.imgs.length; i++) {
+                    _this.imgs[i].draw();
+                }
+                /*游戏胜利判断*/
+                if (_this.bricks.length == 0) {
+                    return gameVictory();
+                }
+            }
+        }
+        /*挡板*/
+        function Board() {
+            var _this = this;
+            this.width = 150;
+            this.height = 25;
+            this.positionX = cvs.width / 2 - this.width / 2;
+            this.positionY = cvs.height - 40;
+            this.draw = function () {
+                ctx.beginPath();
+                ctx.fillStyle = 'pink';
+                ctx.fillRect(_this.positionX, _this.positionY, _this.width, _this.height);
+            };
+            this.updatePos = function () {
+                document.onkeydown = function (e) {
+                    switch (e.keyCode) {
+                        case 37: // 左
+                            if (_this.positionX >= 0) {
+                                _this.positionX -= 12;
+                            }
+                            break;
+                        case 39: // 右
+                            if (_this.positionX <= cvs.width - 150) {
+                                _this.positionX += 12;
+                            }
+                            break;
+                    }
+                };
+            };
+        }
+        /*小球*/
+        function Ball() {
+            var _this = this;
+            this.positionX = cvs.width / 2;
+            this.positionY = cvs.height - 50;
+            this.r = 10;
+            this.Vx = -2;
+            this.Vy = -2;
+            this.dead = false;
+            this.draw = function () {
+                ctx.beginPath();
+                ctx.fillStyle = 'red';
+                ctx.arc(_this.positionX, _this.positionY, _this.r, 0, Math.PI * 2);
+                ctx.fill();
+            };
+            this.updatePos = function () {
+                var dt = 1;
+                _this.positionX += _this.Vx * dt;
+                _this.positionY += _this.Vy * dt;
+            };
+            this.updateState = function () {
+                /*撞左右墙*/
+                if (_this.positionX <= 10 || _this.positionX >= cvs.width - 10) {
+                    _this.Vx = -_this.Vx;
+                }
+                /*撞上墙*/
+                if (_this.positionY <= 10) {
+                    _this.Vy = -_this.Vy;
+                }
+                /*掉落死亡*/
+                if (_this.positionY + _this.r > cvs.height - 20) {
+                    _this.dead = !_this.dead;
+                }
+            }
+        }
+        /*砖块*/
+        function Brick(positionX, positionY) {
+            var _this = this;
+            this.dead = false;
+            this.positionX = positionX;
+            this.positionY = positionY;
+            this.width = 150;
+            this.height = 20;
+            this.draw = function () {
+                ctx.beginPath();
+                ctx.fillStyle = 'blue';
+                ctx.fillRect(_this.positionX, _this.positionY, _this.width, _this.height);
+            }
+        }
+        /*生命值*/
+        function Life(positionX, positionY) {
+            var _this = this;
+            this.positionX = positionX;
+            this.positionY = positionY;
+            this.width = 40;
+            this.height = 40;
+            this.img = new Image();
+            this.img.src = 'images/life.png';
+            this.draw = function () {
+                ctx.beginPath();
+                ctx.drawImage(_this.img,_this.positionX, _this.positionY, _this.width, _this.height);
+            }
+        }
+        /*时间进度条*/
+        function Time() {
+            var _this = this;
+            this.positionX = 760;
+            this.positionY = 200;
+            this.width = 20;
+            this.height = 300;
+            this.dead = false;
+            this.draw = function () {
+                ctx.beginPath();
+                var my_gradient = ctx.createLinearGradient(760, 200, 760, 500);
+                my_gradient.addColorStop(0, 'green');
+                my_gradient.addColorStop(0.33, 'yellow');
+                my_gradient.addColorStop(0.66, 'orange');
+                my_gradient.addColorStop(1, 'red');
+                ctx.fillStyle = my_gradient;
+                ctx.fillRect(_this.positionX, _this.positionY, _this.width, _this.height);
+            };
+            this.updateLength = function () {
+                _this.positionY += 0.04;
+                _this.height -= 0.04;
+            };
+            this.updateState = function () {
+                if (_this.height <= 0) {
+                    _this.dead = !_this.dead;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
